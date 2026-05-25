@@ -243,7 +243,7 @@ export default async function Home({ searchParams }: PageProps) {
             </div>
 
             <h2 className="mt-6 text-2xl font-bold text-gray-800">
-              レシピが見つかりません
+              レシピが見つかりません。
             </h2>
 
             <p className="mt-3 text-gray-500">検索条件を変更してみてください</p>
