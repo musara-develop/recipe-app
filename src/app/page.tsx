@@ -246,7 +246,9 @@ export default async function Home({ searchParams }: PageProps) {
               レシピが見つかりません。
             </h2>
 
-            <p className="mt-3 text-gray-500">検索条件を変更してみてください</p>
+            <p className="mt-3 text-gray-500">
+              検索条件を変更してみてください。
+            </p>
           </div>
         )}
       </section>
