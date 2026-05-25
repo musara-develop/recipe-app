@@ -1,65 +1,255 @@
-import Image from "next/image";
+import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+type PageProps = {
+  searchParams: Promise<{
+    q?: string;
+  }>;
+};
+
+export default async function Home({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const keyword = params.q ?? "";
+
+  let query = supabase
+    .from("recipes")
+    .select("id, recipe_no, title")
+    .order("recipe_no", { ascending: true });
+
+  // title検索
+  if (keyword) {
+    query = query.ilike("title", `%${keyword}%`);
+  }
+
+  const { data: recipes, error } = await query;
+
+  if (error) {
+    return (
+      <main className="min-h-screen bg-[#f5f5f5] flex items-center justify-center">
+        <div className="bg-white p-8 rounded-3xl shadow-sm border">
+          <h1 className="text-2xl font-bold text-red-500">Error</h1>
+
+          <p className="mt-4 text-gray-600">{error.message}</p>
         </div>
       </main>
-    </div>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-[#f5f5f5]">
+      {/* Header */}
+      <header
+        className="
+          sticky
+          top-0
+          z-10
+          backdrop-blur-md
+          bg-white/80
+          border-b
+        "
+      >
+        <div className="max-w-3xl mx-auto px-5 py-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-orange-500 font-medium">My Recipes</p>
+
+              <h1 className="text-3xl font-bold text-gray-800">レシピ一覧</h1>
+            </div>
+
+            <button
+              className="
+                w-12
+                h-12
+                rounded-2xl
+                bg-orange-500
+                text-white
+                text-2xl
+                shadow-lg
+                hover:scale-105
+                hover:bg-orange-600
+                transition
+              "
+            >
+              +
+            </button>
+          </div>
+
+          {/* Search */}
+          <form className="mt-5">
+            <div className="relative">
+              <input
+                type="text"
+                name="q"
+                defaultValue={keyword}
+                placeholder="レシピ名で検索..."
+                className="
+                  w-full
+                  bg-white
+                  border
+                  rounded-2xl
+                  px-5
+                  py-4
+                  pr-14
+                  text-gray-800
+                  placeholder:text-gray-400
+                  outline-none
+                  focus:ring-2
+                  focus:ring-orange-300
+                "
+              />
+
+              <button
+                type="submit"
+                className="
+                  absolute
+                  right-3
+                  top-1/2
+                  -translate-y-1/2
+                  w-10
+                  h-10
+                  rounded-xl
+                  bg-orange-500
+                  text-white
+                  hover:bg-orange-600
+                  transition
+                "
+              >
+                🔍
+              </button>
+            </div>
+          </form>
+        </div>
+      </header>
+
+      {/* Recipe List */}
+      <section className="max-w-3xl mx-auto px-5 py-8">
+        {recipes && recipes.length > 0 ? (
+          <div className="space-y-4">
+            {recipes.map((recipe) => (
+              <Link key={recipe.id} href={`/recipes/${recipe.id}`}>
+                <article
+                  className="
+                    group
+                    bg-white
+                    rounded-3xl
+                    border
+                    shadow-sm
+                    hover:shadow-xl
+                    hover:-translate-y-1
+                    transition-all
+                    duration-300
+                    overflow-hidden
+                    cursor-pointer
+                  "
+                >
+                  <div className="flex items-center">
+                    {/* Accent */}
+                    <div
+                      className="
+                        w-2
+                        self-stretch
+                        bg-gradient-to-b
+                        from-orange-400
+                        to-orange-500
+                      "
+                    />
+
+                    {/* Content */}
+                    <div
+                      className="
+                        flex-1
+                        px-6
+                        py-6
+                        flex
+                        items-center
+                        justify-between
+                      "
+                    >
+                      <div>
+                        <p
+                          className="
+                            text-xs
+                            uppercase
+                            tracking-widest
+                            text-gray-400
+                            font-medium
+                          "
+                        >
+                          Recipe #{recipe.recipe_no}
+                        </p>
+
+                        <h2
+                          className="
+                            mt-2
+                            text-2xl
+                            font-bold
+                            text-gray-800
+                            group-hover:text-orange-500
+                            transition
+                          "
+                        >
+                          {recipe.title}
+                        </h2>
+                      </div>
+
+                      <div
+                        className="
+                          w-12
+                          h-12
+                          rounded-2xl
+                          bg-gray-100
+                          flex
+                          items-center
+                          justify-center
+                          text-gray-400
+                          group-hover:bg-orange-100
+                          group-hover:text-orange-500
+                          transition
+                        "
+                      >
+                        →
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div
+            className="
+              bg-white
+              rounded-3xl
+              border
+              shadow-sm
+              p-14
+              text-center
+            "
+          >
+            <div
+              className="
+                w-20
+                h-20
+                mx-auto
+                rounded-full
+                bg-orange-100
+                flex
+                items-center
+                justify-center
+                text-4xl
+              "
+            >
+              🔍
+            </div>
+
+            <h2 className="mt-6 text-2xl font-bold text-gray-800">
+              レシピが見つかりません
+            </h2>
+
+            <p className="mt-3 text-gray-500">検索条件を変更してみてください</p>
+          </div>
+        )}
+      </section>
+    </main>
   );
 }
